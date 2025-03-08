@@ -1,0 +1,43 @@
+From 0ec40b5994915e1da8a291cd46a30e4a1e66c289 Mon Sep 17 00:00:00 2001
+From: Matthew Ruffell <matthew.ruffell@canonical.com>
+Date: Sat, 8 Mar 2025 15:27:18 +1300
+Subject: [PATCH] Fix segmentation fault when collating halfway through
+ multibyte characters
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When parsing a song name, if it contains multibyte characters, e.g. characters
+that contain accents, like 'ó', a recent change in glib causes gtkpod to
+segfault.
+
+This is because fuzzy_skip_prefix() goes 2 characters into the string, and if
+the second character is a multibyte string, it hits the issue, e.g.:
+
+"fórmula, vol. 2 (deluxe edition)"
+
+Strings are null terminated, so fix by changing g_utf8_collate_key() to use
+len of -1.
+
+Bug: https://gitlab.gnome.org/GNOME/glib/-/issues/3185
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/2044420
+---
+ libgtkpod/misc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libgtkpod/misc.c b/libgtkpod/misc.c
+index 8cb260b8..046d5130 100644
+--- a/libgtkpod/misc.c
++++ b/libgtkpod/misc.c
+@@ -475,7 +475,7 @@ fuzzy_skip_prefix(const gchar *name) {
+ 
+         g_return_val_if_fail (csfk, 0);
+ 
+-        tempStr = g_utf8_collate_key(cleanStr, csfk->length);
++        tempStr = g_utf8_collate_key(cleanStr, -1);
+         if (strcmp(tempStr, csfk->key) == 0) {
+             /* Found article, bump pointers ahead appropriate distance
+              */
+-- 
+2.45.2
+

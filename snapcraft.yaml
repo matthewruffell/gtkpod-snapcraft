@@ -1,0 +1,69 @@
+name: gtkpod
+base: core22
+version: '2.1.5'
+summary: manage songs and playlists on an Apple iPod
+description: |
+  gtkpod is a platform independent GUI for Apple's iPod using GTK3.
+  It allows you to upload songs and playlists to your iPod. It supports ID3
+  tag editing, multiple charsets for ID3 tags, detects duplicate songs,
+  allows offline modification of the database with later synchronisation,
+  and more.
+grade: devel
+confinement: devmode
+
+parts:
+  gtkpod:
+    plugin: make
+    source-type: git
+    source: https://github.com/trinitonesounds/gtkpod
+    override-pull: |
+      snapcraftctl pull
+      git am $SNAPCRAFT_PROJECT_DIR/patches/lp2044420-Fix-segmentation-fault-when-collating-halfway-throug.patch
+      sed -i -e 's|Icon=gtkpod|Icon=/usr/share/icons/hicolor/scalable/apps/gtkpod.svg|g' data/gtkpod.desktop.in
+    override-build: |
+      ./autogen.sh --prefix=/usr --enable-deprecations --disable-plugin-coverweb CFLAGS="-fstack-protector-strong -Wformat -Werror=format-security -fcommon" LDFLAGS="-Wl,-Bsymbolic-functions -Wl,-z,relro"
+      snapcraftctl build
+    build-packages:
+      - autoconf
+      - automake
+      - faad
+      - flex
+      - gettext
+      - gnome-common
+      - gtk-doc-tools
+      - libanjuta-dev
+      - libclutter-gtk-1.0-dev
+      - libcurl4-gnutls-dev
+      - libfaad-dev
+      - libflac-dev
+      - libgdl-3-dev
+      - libglib2.0-dev
+      - libgpod-dev
+      - libgstreamer-plugins-base1.0-dev
+      - libgstreamer1.0-dev
+      - libgtk-3-dev
+      - libid3tag0-dev
+      - libtool-bin
+      - libvorbis-dev
+      - libxml-parser-perl
+      - libxml2-dev
+    stage-packages:
+      - libanjuta-3-0
+      - libgpod4
+      - libgdl-3-5
+      - libid3tag0
+
+apps:
+  gtkpod:
+    command: usr/bin/gtkpod
+    desktop: usr/share/applications/gtkpod.desktop
+    extensions: [gnome]
+    plugs:
+      - home
+      - udisks2
+      - alsa
+      - pulseaudio
+      - removable-media
+      - optical-drive
+      - raw-usb
+      - media-hub
