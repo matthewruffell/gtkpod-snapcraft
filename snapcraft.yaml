@@ -8,6 +8,8 @@ description: |
   tag editing, multiple charsets for ID3 tags, detects duplicate songs,
   allows offline modification of the database with later synchronisation,
   and more.
+license: GPL-2.0
+issues: https://github.com/matthewruffell/gtkpod-snapcraft/issues
 grade: devel
 confinement: devmode
 
@@ -17,12 +19,18 @@ parts:
     source-type: git
     source: https://github.com/trinitonesounds/gtkpod
     override-pull: |
-      snapcraftctl pull
+      craftctl default
       git am $SNAPCRAFT_PROJECT_DIR/patches/lp2044420-Fix-segmentation-fault-when-collating-halfway-throug.patch
       sed -i -e 's|Icon=gtkpod|Icon=/usr/share/icons/hicolor/scalable/apps/gtkpod.svg|g' data/gtkpod.desktop.in
     override-build: |
       ./autogen.sh --prefix=/usr --enable-deprecations --disable-plugin-coverweb CFLAGS="-fstack-protector-strong -Wformat -Werror=format-security -fcommon" LDFLAGS="-Wl,-Bsymbolic-functions -Wl,-z,relro"
-      snapcraftctl build
+      craftctl default
+      ldconfig
+    override-prime: |
+      craftctl default
+      glib-compile-schemas usr/share/glib-2.0/schemas
+      update-mime-database usr/share/mime
+      usr/lib/${SNAPCRAFT_ARCH_TRIPLET}/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders --update-cache
     build-packages:
       - autoconf
       - automake
@@ -52,18 +60,98 @@ parts:
       - libgpod4
       - libgdl-3-5
       - libid3tag0
+      - libegl1
+      - libglvnd0
+      - libclutter-1.0-0
+      - libclutter-gtk-1.0-0
+      - libcogl-pango20
+      - libcogl-path20
+      - libcogl20
+      - libdw1
+      - libevdev2
+      - libgbm1
+      - libgstreamer1.0-0
+      - libgudev-1.0-0
+      - libinput10
+      - libjson-glib-1.0-0
+      - libmtdev1
+      - libunwind8
+      - libwacom9
+      - libwayland-server0
+      - libxcb-randr0
+      - libcurl3-gnutls
+      - libldap-2.5-0
+      - libnghttp2-14
+      - libpsl5
+      - librtmp1
+      - libsasl2-2
+      - libflac8
+      - libogg0
+      - libvorbis0a
+      - libvorbisfile3
+      - libgl1-mesa-dri
+      - libglib2.0-0
+      - libglib2.0-bin
+      - libgdk-pixbuf-2.0-0
+
+  mesa-patchelf:
+    plugin: nil
+    stage-packages:
+    - libgl1-mesa-dri
+    stage:
+      - -usr/lib/${SNAPCRAFT_ARCH_TRIPLET}/dri
+
+  mesa-no-patchelf:
+    plugin: nil
+    stage-packages:
+      - libgl1-mesa-dri
+    build-attributes:
+      - no-patchelf
+    stage:
+      - usr/lib/${SNAPCRAFT_ARCH_TRIPLET}/dri
+
+plugs:
+  gtk-3-themes:
+    interface: content
+    target: $SNAP/usr/share/themes
+    default-provider: gtk-common-themes
+  icon-themes:
+    interface: content
+    target: $SNAP/usr/share/icons
+    default-provider: gtk-common-themes
+  sound-themes:
+    interface: content
+    target: $SNAP/usr/share/sounds
+    default-provider: gtk-common-themes
+
+layout:
+  /usr/lib/gtkpod:
+    bind: $SNAP/usr/lib/gtkpod
+  /usr/share/gtkpod:
+    bind: $SNAP/usr/share/gtkpod
 
 apps:
   gtkpod:
     command: usr/bin/gtkpod
     desktop: usr/share/applications/gtkpod.desktop
-    extensions: [gnome]
+    environment:
+      GSETTINGS_SCHEMA_DIR: $SNAP/usr/share/glib-2.0/schemas
+      LIBGL_DRIVERS_PATH: $SNAP/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}/dri
+      XDG_DATA_DIRS: $SNAP/usr/share:$XDG_DATA_DIRS
     plugs:
       - home
       - udisks2
+      - network
+      - network-manager-observe
+      - network-bind
+      - desktop
+      - desktop-legacy
+      - x11
+      - wayland
       - alsa
       - pulseaudio
       - removable-media
       - optical-drive
       - raw-usb
       - media-hub
+      - unity7
