@@ -10,8 +10,8 @@ description: |
   and more.
 license: GPL-2.0
 issues: https://github.com/matthewruffell/gtkpod-snapcraft/issues
-grade: devel
-confinement: devmode
+grade: stable
+confinement: strict
 
 parts:
   gtkpod:
@@ -140,7 +140,6 @@ apps:
       XDG_DATA_DIRS: $SNAP/usr/share:$XDG_DATA_DIRS
     plugs:
       - home
-      - udisks2
       - network
       - network-manager-observe
       - network-bind
@@ -150,8 +149,9 @@ apps:
       - wayland
       - alsa
       - pulseaudio
+      - audio-playback
       - removable-media
       - optical-drive
-      - raw-usb
+      - mount-observe
       - media-hub
       - unity7
